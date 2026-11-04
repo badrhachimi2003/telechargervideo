@@ -303,12 +303,11 @@ export const VideoDownloader: React.FC<VideoDownloaderProps> = ({ lang }) => {
         } catch {
           window.open(downloadHref, '_blank', 'noopener,noreferrer');
         }
-      } else {
-        // Direct in-site experience: scroll smoothly to the In-Site Downloader Engine
-        const engineElem = document.getElementById('direct-engine');
-        if (engineElem) {
-          engineElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+      } else if (downloadHref && downloadHref.startsWith('http')) {
+        // Open the dedicated direct conversion gateway in a clean new tab
+        window.open(downloadHref, '_blank', 'noopener,noreferrer');
+      } else if (downloadHref) {
+        window.location.href = downloadHref;
       }
     } catch (err) {
       console.error('Download trigger error:', err);
@@ -318,13 +317,13 @@ export const VideoDownloader: React.FC<VideoDownloaderProps> = ({ lang }) => {
       setActiveDownloadId(null);
       setDownloadSuccess(
         format.format === 'jpg'
-          ? (lang === 'ar' ? 'تم حفظ صورة الغلاف بنجاح!' : 'Image de couverture téléchargée avec succès !')
+          ? (lang === 'ar' ? 'تم حفظ صورة الغلاف بجودة عالية بنجاح!' : 'Image de couverture HD téléchargée avec succès !')
           : (lang === 'ar'
-              ? `اضغط على زر التحميل المباشر أدناه لتنزيل ${format.quality} دون مغادرة الموقع!`
-              : `Cliquez sur le bouton direct ci-dessous pour télécharger ${format.quality} sans quitter le site !`)
+              ? `تم فتح صفحة تنزيل ${format.quality} في علامة تبويب جديدة! سيبدأ التنزيل تلقائياً.`
+              : `Page de téléchargement ${format.quality} ouverte dans un nouvel onglet ! Le téléchargement démarre.`)
       );
       setTimeout(() => setDownloadSuccess(null), 6000);
-    }, 600);
+    }, 400);
   };
 
   // Detect platform in real time from input
@@ -511,62 +510,67 @@ export const VideoDownloader: React.FC<VideoDownloaderProps> = ({ lang }) => {
                 </div>
               </div>
 
-              {/* In-Site Direct Downloader Engine (Zero External Redirects) */}
-              {result.videoId && (
-                <div id="direct-engine" className="mt-6 rounded-xl border border-indigo-500/40 bg-gradient-to-r from-indigo-950/60 to-slate-900 p-4 sm:p-5 shadow-lg">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping" />
-                      <h4 className="text-sm font-bold text-white">
-                        {lang === 'ar' ? 'التحميل المباشر داخل الموقع (بدون الانتقال لأي موقع خارجي)' : 'Téléchargement Direct In-Site (Sans aucune redirection)'}
-                      </h4>
-                    </div>
-                    <span className="text-[11px] text-emerald-400 font-mono font-medium">
-                      telechargervideo.com · Direct Engine
-                    </span>
+              {/* Express Quick Download Channels */}
+              <div className="mt-6 rounded-xl border border-indigo-500/30 bg-gradient-to-r from-indigo-950/40 via-slate-900 to-slate-950 p-4 sm:p-5 shadow-lg">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <h4 className="text-sm font-bold text-white">
+                      {lang === 'ar' ? 'خيارات التحميل السريع المباشر' : 'Téléchargement Direct Express'}
+                    </h4>
                   </div>
-
-                  <p className="text-xs text-slate-300 mb-4">
-                    {lang === 'ar'
-                      ? 'اضغط على زر التحميل المباشر أدناه لتنزيل الفيديو أو الصوت وحفظه في جهازك فوراً وبأقصى سرعة:'
-                      : 'Cliquez sur le bouton ci-dessous pour enregistrer la vidéo ou l\'audio directement sur votre appareil :'}
-                  </p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Direct MP4 Button Widget */}
-                    <div className="rounded-lg border border-slate-800 bg-slate-950/90 p-3 flex flex-col items-center">
-                      <span className="text-xs font-semibold text-slate-200 mb-2 flex items-center gap-1.5">
-                        <Video className="h-4 w-4 text-indigo-400" />
-                        <span>{lang === 'ar' ? 'تحميل الفيديو MP4 HD' : 'Télécharger Vidéo MP4 HD'}</span>
-                      </span>
-                      <iframe
-                        src={`https://bestapi.cc/widget/single-button/mp4/${result.videoId}/dark`}
-                        width="100%"
-                        height="52px"
-                        style={{ border: 'none', overflow: 'hidden' }}
-                        title="Direct MP4 In-Site Downloader"
-                        scrolling="no"
-                      />
-                    </div>
-
-                    {/* Direct MP3 Button Widget */}
-                    <div className="rounded-lg border border-slate-800 bg-slate-950/90 p-3 flex flex-col items-center">
-                      <span className="text-xs font-semibold text-slate-200 mb-2 flex items-center gap-1.5">
-                        <Music className="h-4 w-4 text-amber-400" />
-                        <span>{lang === 'ar' ? 'تحميل الصوت MP3 (320 kbps)' : 'Télécharger Audio MP3 HQ'}</span>
-                      </span>
-                      <iframe
-                        src={`https://bestapi.cc/widget/single-button/mp3/${result.videoId}/dark`}
-                        width="100%"
-                        height="52px"
-                        style={{ border: 'none', overflow: 'hidden' }}
-                        title="Direct MP3 In-Site Downloader"
-                        scrolling="no"
-                      />
-                    </div>
-                  </div>
+                  <span className="text-[11px] text-emerald-400 font-mono font-medium">
+                    TelechargerVideo.com · High Speed
+                  </span>
                 </div>
-              )}
+
+                <p className="text-xs text-slate-300 mb-4">
+                  {lang === 'ar'
+                    ? 'اختر الصيغة المطلوبة أدناه للبدء في تنزيل وحفظ الملف في جهازك مباشرة وبأعلى جودة متاحة:'
+                    : 'Choisissez le format souhaité pour démarrer le téléchargement immédiat sur votre appareil :'}
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Quick MP4 HD Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const mp4Fmt = result.formats.find(f => f.format === 'mp4' && f.quality.includes('1080p')) || result.formats.find(f => f.format === 'mp4') || result.formats[0];
+                      if (mp4Fmt) handleDownload(mp4Fmt);
+                    }}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 p-3 text-xs sm:text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition-all cursor-pointer active:scale-95"
+                  >
+                    <Video className="h-4 w-4" />
+                    <span>{lang === 'ar' ? 'تحميل فيديو MP4 HD' : 'Télécharger MP4 HD'}</span>
+                  </button>
+
+                  {/* Quick MP3 Audio Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const mp3Fmt = result.formats.find(f => f.format === 'mp3') || result.formats[4];
+                      if (mp3Fmt) handleDownload(mp3Fmt);
+                    }}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-500 p-3 text-xs sm:text-sm font-bold text-white shadow-lg shadow-amber-600/20 transition-all cursor-pointer active:scale-95"
+                  >
+                    <Music className="h-4 w-4" />
+                    <span>{lang === 'ar' ? 'تحميل صوت MP3 عالي الدقة' : 'Télécharger Audio MP3'}</span>
+                  </button>
+
+                  {/* Quick Cover Image Download */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const imgFmt = result.formats.find(f => f.format === 'jpg') || result.formats[result.formats.length - 1];
+                      if (imgFmt) handleDownload(imgFmt);
+                    }}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 text-xs sm:text-sm font-bold text-white shadow-md transition-all cursor-pointer active:scale-95"
+                  >
+                    <ImageIcon className="h-4 w-4 text-emerald-400" />
+                    <span>{lang === 'ar' ? 'حفظ صورة الغلاف HD' : 'Télécharger Couverture'}</span>
+                  </button>
+                </div>
+              </div>
 
               {/* Formats Table */}
               <div className="mt-6 border-t border-slate-800 pt-6">

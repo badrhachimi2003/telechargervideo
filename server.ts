@@ -26,6 +26,7 @@ interface VideoAnalysisResult {
   authorUrl?: string;
   thumbnail: string;
   duration?: string;
+  videoId?: string;
   formats: VideoFormat[];
 }
 
@@ -84,10 +85,15 @@ async function startServer() {
       let author = 'Content Creator';
       let authorUrl = '';
       let thumbnail = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80';
-      let duration = '02:45';
+      let duration: string | undefined = undefined;
+      let videoId = '';
 
       // Platform-specific extraction & oEmbed resolution
       if (platform === 'youtube') {
+        const match = trimmedUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i);
+        if (match) videoId = match[1];
+        if (videoId) thumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+
         try {
           const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(trimmedUrl)}&format=json`;
           const fetchRes = await fetch(oembedUrl, { signal: AbortSignal.timeout(3500) });
@@ -102,6 +108,9 @@ async function startServer() {
           // fallback gracefully
         }
       } else if (platform === 'tiktok') {
+        const match = trimmedUrl.match(/@([^/]+)\/video\/(\d+)/i);
+        if (match) videoId = match[2];
+
         try {
           const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(trimmedUrl)}`;
           const fetchRes = await fetch(oembedUrl, { signal: AbortSignal.timeout(3500) });
@@ -135,6 +144,9 @@ async function startServer() {
           // fallback
         }
       } else if (platform === 'twitter') {
+        const match = trimmedUrl.match(/x\.com\/([^/]+)\/status\/(\d+)/i);
+        if (match) videoId = match[2];
+
         try {
           const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(trimmedUrl)}`;
           const fetchRes = await fetch(oembedUrl, { signal: AbortSignal.timeout(3500) });
@@ -149,71 +161,97 @@ async function startServer() {
         }
       }
 
+      // Helper to generate reliable, working download gateway targets
+      const getDownloadTarget = (formatType: 'video' | 'audio' | 'image') => {
+        if (formatType === 'image') {
+          return thumbnail;
+        }
+        if (platform === 'youtube') {
+          if (formatType === 'audio') {
+            return `https://y2mate.nu/en/?url=${encodeURIComponent(trimmedUrl)}`;
+          }
+          return `https://ssyoutube.com/en185/youtube-video-downloader?url=${encodeURIComponent(trimmedUrl)}`;
+        }
+        if (platform === 'tiktok') {
+          return `https://snaptik.app/en?url=${encodeURIComponent(trimmedUrl)}`;
+        }
+        if (platform === 'instagram') {
+          return `https://snapinsta.app/?url=${encodeURIComponent(trimmedUrl)}`;
+        }
+        if (platform === 'facebook') {
+          return `https://fdown.net/?url=${encodeURIComponent(trimmedUrl)}`;
+        }
+        if (platform === 'twitter') {
+          return `https://twdown.net/?url=${encodeURIComponent(trimmedUrl)}`;
+        }
+        return `https://savefrom.net/?url=${encodeURIComponent(trimmedUrl)}`;
+      };
+
       // Generate downloadable qualities & formats
-      const safeId = Buffer.from(trimmedUrl).toString('base64url').slice(0, 16);
+      const safeId = videoId || Buffer.from(trimmedUrl).toString('base64url').slice(0, 16);
       const formats: VideoFormat[] = [
         {
           id: `${safeId}_1080p`,
           quality: '1080p Full HD',
           resolution: '1920x1080',
           format: 'mp4',
-          fileSize: '48.2 MB',
+          fileSize: 'Original HD',
           hasAudio: true,
-          downloadUrl: `/api/download?type=video&quality=1080p&id=${safeId}&title=${encodeURIComponent(title)}`,
+          downloadUrl: getDownloadTarget('video'),
         },
         {
           id: `${safeId}_720p`,
           quality: '720p HD',
           resolution: '1280x720',
           format: 'mp4',
-          fileSize: '24.5 MB',
+          fileSize: 'HD Ready',
           hasAudio: true,
-          downloadUrl: `/api/download?type=video&quality=720p&id=${safeId}&title=${encodeURIComponent(title)}`,
+          downloadUrl: getDownloadTarget('video'),
         },
         {
           id: `${safeId}_480p`,
           quality: '480p SD',
           resolution: '854x480',
           format: 'mp4',
-          fileSize: '14.1 MB',
+          fileSize: 'Standard Size',
           hasAudio: true,
-          downloadUrl: `/api/download?type=video&quality=480p&id=${safeId}&title=${encodeURIComponent(title)}`,
+          downloadUrl: getDownloadTarget('video'),
         },
         {
           id: `${safeId}_360p`,
           quality: '360p Fast',
           resolution: '640x360',
           format: 'mp4',
-          fileSize: '8.4 MB',
+          fileSize: 'Fast Mobile',
           hasAudio: true,
-          downloadUrl: `/api/download?type=video&quality=360p&id=${safeId}&title=${encodeURIComponent(title)}`,
+          downloadUrl: getDownloadTarget('video'),
         },
         {
           id: `${safeId}_audio_hq`,
           quality: 'MP3 Audio HQ (320 kbps)',
           resolution: 'Stereo Audio',
           format: 'mp3',
-          fileSize: '6.8 MB',
+          fileSize: 'Studio Sound',
           hasAudio: true,
-          downloadUrl: `/api/download?type=audio&quality=320k&id=${safeId}&title=${encodeURIComponent(title)}`,
+          downloadUrl: getDownloadTarget('audio'),
         },
         {
           id: `${safeId}_audio_std`,
           quality: 'MP3 Audio (128 kbps)',
           resolution: 'Standard Audio',
           format: 'mp3',
-          fileSize: '3.2 MB',
+          fileSize: 'Compact Audio',
           hasAudio: true,
-          downloadUrl: `/api/download?type=audio&quality=128k&id=${safeId}&title=${encodeURIComponent(title)}`,
+          downloadUrl: getDownloadTarget('audio'),
         },
         {
           id: `${safeId}_thumbnail`,
           quality: 'Vignette HD / Cover',
           resolution: 'HD Image',
           format: 'jpg',
-          fileSize: '240 KB',
+          fileSize: 'HD Photo',
           hasAudio: false,
-          downloadUrl: `/api/download?type=image&id=${safeId}&title=${encodeURIComponent(title)}`,
+          downloadUrl: thumbnail,
         },
       ];
 
@@ -227,6 +265,7 @@ async function startServer() {
         authorUrl,
         thumbnail,
         duration,
+        videoId,
         formats,
       };
 
