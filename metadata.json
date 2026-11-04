@@ -1,0 +1,6 @@
+{
+  "name": "TelechargerVideo.com",
+  "description": "Téléchargez facilement des vidéos et audios en haute qualité (MP4, MP3, 1080p, 4K) depuis YouTube, TikTok, Instagram, Facebook, X (Twitter) et plus. Gratuit, rapide et optimisé pour le référencement.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
