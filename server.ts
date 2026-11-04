@@ -161,30 +161,12 @@ async function startServer() {
         }
       }
 
-      // Helper to generate reliable, working download gateway targets
-      const getDownloadTarget = (formatType: 'video' | 'audio' | 'image') => {
+      // Internal In-Site Download URLs (Zero External Redirects)
+      const getDownloadTarget = (formatType: 'video' | 'audio' | 'image', qualityKey: string) => {
         if (formatType === 'image') {
           return thumbnail;
         }
-        if (platform === 'youtube') {
-          if (formatType === 'audio') {
-            return `https://y2mate.nu/en/?url=${encodeURIComponent(trimmedUrl)}`;
-          }
-          return `https://ssyoutube.com/en185/youtube-video-downloader?url=${encodeURIComponent(trimmedUrl)}`;
-        }
-        if (platform === 'tiktok') {
-          return `https://snaptik.app/en?url=${encodeURIComponent(trimmedUrl)}`;
-        }
-        if (platform === 'instagram') {
-          return `https://snapinsta.app/?url=${encodeURIComponent(trimmedUrl)}`;
-        }
-        if (platform === 'facebook') {
-          return `https://fdown.net/?url=${encodeURIComponent(trimmedUrl)}`;
-        }
-        if (platform === 'twitter') {
-          return `https://twdown.net/?url=${encodeURIComponent(trimmedUrl)}`;
-        }
-        return `https://savefrom.net/?url=${encodeURIComponent(trimmedUrl)}`;
+        return `/api/download?type=${formatType}&quality=${qualityKey}&id=${safeId}&title=${encodeURIComponent(title)}`;
       };
 
       // Generate downloadable qualities & formats
@@ -197,7 +179,7 @@ async function startServer() {
           format: 'mp4',
           fileSize: 'Original HD',
           hasAudio: true,
-          downloadUrl: getDownloadTarget('video'),
+          downloadUrl: getDownloadTarget('video', '1080p'),
         },
         {
           id: `${safeId}_720p`,
@@ -206,7 +188,7 @@ async function startServer() {
           format: 'mp4',
           fileSize: 'HD Ready',
           hasAudio: true,
-          downloadUrl: getDownloadTarget('video'),
+          downloadUrl: getDownloadTarget('video', '720p'),
         },
         {
           id: `${safeId}_480p`,
@@ -215,7 +197,7 @@ async function startServer() {
           format: 'mp4',
           fileSize: 'Standard Size',
           hasAudio: true,
-          downloadUrl: getDownloadTarget('video'),
+          downloadUrl: getDownloadTarget('video', '480p'),
         },
         {
           id: `${safeId}_360p`,
@@ -224,7 +206,7 @@ async function startServer() {
           format: 'mp4',
           fileSize: 'Fast Mobile',
           hasAudio: true,
-          downloadUrl: getDownloadTarget('video'),
+          downloadUrl: getDownloadTarget('video', '360p'),
         },
         {
           id: `${safeId}_audio_hq`,
@@ -233,7 +215,7 @@ async function startServer() {
           format: 'mp3',
           fileSize: 'Studio Sound',
           hasAudio: true,
-          downloadUrl: getDownloadTarget('audio'),
+          downloadUrl: getDownloadTarget('audio', '320k'),
         },
         {
           id: `${safeId}_audio_std`,
@@ -242,7 +224,7 @@ async function startServer() {
           format: 'mp3',
           fileSize: 'Compact Audio',
           hasAudio: true,
-          downloadUrl: getDownloadTarget('audio'),
+          downloadUrl: getDownloadTarget('audio', '128k'),
         },
         {
           id: `${safeId}_thumbnail`,
@@ -312,6 +294,16 @@ async function startServer() {
   app.get('/telechargervideo_hostinger.zip', (_req: Request, res: Response) => {
     const zipPath = path.resolve(__dirname, 'public', 'telechargervideo_hostinger.zip');
     res.download(zipPath, 'telechargervideo_hostinger.zip', (err) => {
+      if (err) {
+        res.status(404).send('File not found');
+      }
+    });
+  });
+
+  // API: Complete GitHub project ZIP update download
+  app.get('/telechargervideo_github_update.zip', (_req: Request, res: Response) => {
+    const zipPath = path.resolve(__dirname, 'public', 'telechargervideo_github_update.zip');
+    res.download(zipPath, 'telechargervideo_github_update.zip', (err) => {
       if (err) {
         res.status(404).send('File not found');
       }

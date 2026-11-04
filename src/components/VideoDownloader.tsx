@@ -139,11 +139,7 @@ export const VideoDownloader: React.FC<VideoDownloaderProps> = ({ lang }) => {
         format: 'mp4',
         fileSize: 'Original HD',
         hasAudio: true,
-        downloadUrl: platform === 'youtube'
-          ? `https://en.savefrom.net/1-youtube-video-downloader-79/?url=${encodeURIComponent(trimmed)}`
-          : platform === 'tiktok'
-          ? `https://snaptik.app/en?url=${encodeURIComponent(trimmed)}`
-          : `https://savefrom.net/?url=${encodeURIComponent(trimmed)}`,
+        downloadUrl: `/api/download?type=video&quality=1080p&id=${safeId}&title=${encodeURIComponent(title)}`,
       },
       {
         id: `${safeId}_720p`,
@@ -152,9 +148,7 @@ export const VideoDownloader: React.FC<VideoDownloaderProps> = ({ lang }) => {
         format: 'mp4',
         fileSize: 'HD Ready',
         hasAudio: true,
-        downloadUrl: platform === 'youtube'
-          ? `https://en.savefrom.net/1-youtube-video-downloader-79/?url=${encodeURIComponent(trimmed)}`
-          : `https://savefrom.net/?url=${encodeURIComponent(trimmed)}`,
+        downloadUrl: `/api/download?type=video&quality=720p&id=${safeId}&title=${encodeURIComponent(title)}`,
       },
       {
         id: `${safeId}_480p`,
@@ -163,9 +157,7 @@ export const VideoDownloader: React.FC<VideoDownloaderProps> = ({ lang }) => {
         format: 'mp4',
         fileSize: 'Standard Size',
         hasAudio: true,
-        downloadUrl: platform === 'youtube'
-          ? `https://en.savefrom.net/1-youtube-video-downloader-79/?url=${encodeURIComponent(trimmed)}`
-          : `https://savefrom.net/?url=${encodeURIComponent(trimmed)}`,
+        downloadUrl: `/api/download?type=video&quality=480p&id=${safeId}&title=${encodeURIComponent(title)}`,
       },
       {
         id: `${safeId}_360p`,
@@ -174,9 +166,7 @@ export const VideoDownloader: React.FC<VideoDownloaderProps> = ({ lang }) => {
         format: 'mp4',
         fileSize: 'Fast Mobile',
         hasAudio: true,
-        downloadUrl: platform === 'youtube'
-          ? `https://en.savefrom.net/1-youtube-video-downloader-79/?url=${encodeURIComponent(trimmed)}`
-          : `https://savefrom.net/?url=${encodeURIComponent(trimmed)}`,
+        downloadUrl: `/api/download?type=video&quality=360p&id=${safeId}&title=${encodeURIComponent(title)}`,
       },
       {
         id: `${safeId}_audio_hq`,
@@ -185,9 +175,7 @@ export const VideoDownloader: React.FC<VideoDownloaderProps> = ({ lang }) => {
         format: 'mp3',
         fileSize: 'Studio Sound',
         hasAudio: true,
-        downloadUrl: platform === 'youtube'
-          ? `https://en.savefrom.net/1-youtube-video-downloader-79/?url=${encodeURIComponent(trimmed)}`
-          : `https://savefrom.net/?url=${encodeURIComponent(trimmed)}`,
+        downloadUrl: `/api/download?type=audio&quality=320k&id=${safeId}&title=${encodeURIComponent(title)}`,
       },
       {
         id: `${safeId}_audio_std`,
@@ -196,9 +184,7 @@ export const VideoDownloader: React.FC<VideoDownloaderProps> = ({ lang }) => {
         format: 'mp3',
         fileSize: 'Compact Audio',
         hasAudio: true,
-        downloadUrl: platform === 'youtube'
-          ? `https://en.savefrom.net/1-youtube-video-downloader-79/?url=${encodeURIComponent(trimmed)}`
-          : `https://savefrom.net/?url=${encodeURIComponent(trimmed)}`,
+        downloadUrl: `/api/download?type=audio&quality=128k&id=${safeId}&title=${encodeURIComponent(title)}`,
       },
       {
         id: `${safeId}_thumbnail`,
@@ -303,11 +289,14 @@ export const VideoDownloader: React.FC<VideoDownloaderProps> = ({ lang }) => {
         } catch {
           window.open(downloadHref, '_blank', 'noopener,noreferrer');
         }
-      } else if (downloadHref && downloadHref.startsWith('http')) {
-        // Open the dedicated direct conversion gateway in a clean new tab
-        window.open(downloadHref, '_blank', 'noopener,noreferrer');
       } else if (downloadHref) {
-        window.location.href = downloadHref;
+        // Trigger browser native download directly from telechargervideo.com
+        const link = document.createElement('a');
+        link.href = downloadHref;
+        link.setAttribute('download', '');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
     } catch (err) {
       console.error('Download trigger error:', err);
@@ -317,10 +306,10 @@ export const VideoDownloader: React.FC<VideoDownloaderProps> = ({ lang }) => {
       setActiveDownloadId(null);
       setDownloadSuccess(
         format.format === 'jpg'
-          ? (lang === 'ar' ? 'تم حفظ صورة الغلاف بجودة عالية بنجاح!' : 'Image de couverture HD téléchargée avec succès !')
+          ? (lang === 'ar' ? 'تم حفظ صورة الغلاف بجودة عالية في جهازك بنجاح!' : 'Image de couverture HD téléchargée avec succès !')
           : (lang === 'ar'
-              ? `تم فتح صفحة تنزيل ${format.quality} في علامة تبويب جديدة! سيبدأ التنزيل تلقائياً.`
-              : `Page de téléchargement ${format.quality} ouverte dans un nouvel onglet ! Le téléchargement démarre.`)
+              ? `تم بدء تنزيل ${format.quality} في جهازك مباشرة دون مغادرة الموقع!`
+              : `Téléchargement de ${format.quality} démarré sur votre appareil sans quitter le site !`)
       );
       setTimeout(() => setDownloadSuccess(null), 6000);
     }, 400);
@@ -501,14 +490,40 @@ export const VideoDownloader: React.FC<VideoDownloaderProps> = ({ lang }) => {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center gap-2">
-                    <span className="text-xs text-slate-500">
-                      {lang === 'ar' ? 'فحص أمني: الفيديو خالٍ من الإعلانات المزعجة وآمن للتحميل' : 'Scan de sécurité : Vidéo propre et sécurisée'}
-                    </span>
-                    <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500">
+                        {lang === 'ar' ? 'فحص أمني: الفيديو خالٍ من الإعلانات المزعجة وآمن للتحميل' : 'Scan de sécurité : Vidéo propre et sécurisée'}
+                      </span>
+                      <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                    </div>
+
+                    {result.videoId && result.platform === 'youtube' && (
+                      <button
+                        type="button"
+                        onClick={() => setShowPreview(!showPreview)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-1.5 text-xs font-semibold text-indigo-300 transition-colors cursor-pointer"
+                      >
+                        <Play className="h-3.5 w-3.5 text-indigo-400" />
+                        <span>{showPreview ? (lang === 'ar' ? 'إخفاء المشغل' : 'Masquer le lecteur') : (lang === 'ar' ? 'مشاهدة الفيديو داخل الموقع' : 'Lire la vidéo sur le site')}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
+
+              {/* Embedded In-Site Player */}
+              {showPreview && result.videoId && result.platform === 'youtube' && (
+                <div className="mt-4 rounded-xl overflow-hidden border border-indigo-500/40 bg-black aspect-video shadow-2xl animate-fadeIn">
+                  <iframe
+                    src={`https://www.youtube-nocookie.com/embed/${result.videoId}?autoplay=1`}
+                    title={result.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full border-0"
+                  />
+                </div>
+              )}
 
               {/* Express Quick Download Channels */}
               <div className="mt-6 rounded-xl border border-indigo-500/30 bg-gradient-to-r from-indigo-950/40 via-slate-900 to-slate-950 p-4 sm:p-5 shadow-lg">
